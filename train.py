@@ -1,21 +1,3 @@
-"""
-This training script can be run both on a single gpu in debug mode,
-and also in a larger training run with distributed data parallel (ddp).
-
-To run on a single GPU small debug run, example:
-$ python -m train.py --compile=False --eval_iters=10 --batch_size=8
-
-To run with DDP on 4 gpus on 1 node, example:
-$ torchrun --standalone --nproc_per_node=4 train.py
-
-To run with DDP on 4 gpus across 2 nodes, example:
-- Run on the first (master) node with example IP 123.456.123.456:
-$ torchrun --nproc_per_node=8 --nnodes=2 --node_rank=0 --master_addr=123.456.123.456 --master_port=1234 train.py
-- Run on the worker node:
-$ torchrun --nproc_per_node=8 --nnodes=2 --node_rank=1 --master_addr=123.456.123.456 --master_port=1234 train.py
-(If your cluster does not have Infiniband interconnect prepend NCCL_IB_DISABLE=1)
-"""
-
 import math
 import os
 import time
@@ -30,6 +12,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from tinystories import Task
 from modeling_bitnet import BitnetModel, BitnetConfig
 from export import model_export
+from tokenization_bitnet import BitnetTokenizer
 
 # -----------------------------------------------------------------------------
 # I/O
@@ -80,6 +63,10 @@ config_keys = [
 exec(open("configurator.py").read())  # overrides from command line or config file
 config = {k: globals()[k] for k in config_keys}  # will be useful for logging
 # -----------------------------------------------------------------------------
+
+# Load the pre-trained tokenizer
+tokenizer = BitnetTokenizer.from_pretrained(".")
+vocab_size = tokenizer.vocab_size
 
 # fixing some hyperparams to sensible defaults
 lr_decay_iters = max_iters  # should be ~= max_iters per Chinchilla
