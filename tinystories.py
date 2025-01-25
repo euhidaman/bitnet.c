@@ -71,25 +71,32 @@ def process_shard(args, tokenizer):
     for example in tqdm(data, position=shard_id):
         text = example["story"]
         text = text.strip()  # get rid of leading/trailing whitespace
-        tokens = tokenizer.encode(text, bos=True, eos=False)  # encode the text, use BOS
+
+        # Encode the text and manually add BOS and EOS tokens
+        tokens = tokenizer.encode(text)
+        tokens = [tokenizer.bos_token_id] + tokens + [tokenizer.eos_token_id]  # Add BOS and EOS tokens
+
         all_tokens.extend(tokens)
-    # convert to uint16 nparray
+    # Convert to uint16 nparray
     all_tokens = np.array(all_tokens, dtype=np.uint16)
-    # calculate the output filename
+    # Calculate the output filename
     bin_dir = os.path.join(DATA_CACHE_DIR, f"tok{tokenizer.vocab_size}")
     shard_basename = os.path.basename(shard)
     bin_basename = shard_basename.replace(".json", ".bin")
     tokenized_filename = os.path.join(bin_dir, bin_basename)
-    # write the bytes
+    # Write the bytes
     with open(tokenized_filename, "wb") as f:
         f.write(all_tokens.tobytes())
-    # calculate the average sequence length
-    avg_seq_len = all_tokens.size / ((all_tokens == 1).sum())
+    # Calculate the average sequence length
+    avg_seq_len = all_tokens.size / ((all_tokens == tokenizer.bos_token_id).sum())
     print(f"Saved {tokenized_filename}, average seqlen: {avg_seq_len:.2f}")
 
 def pretokenize():
-    # Load the pre-trained tokenizer
-    tokenizer = BitnetTokenizer.from_pretrained(".")
+    tokenizer = BitnetTokenizer.from_pretrained(
+        ".", 
+        add_bos_token=True,  # Add BOS token
+        add_eos_token=False  # Do not add EOS token
+    )
 
     # iterate the shards and tokenize all of them one by one
     data_dir = os.path.join(DATA_CACHE_DIR, "TinyStories_all_data")
@@ -135,7 +142,7 @@ class PretokDataset(torch.utils.data.IterableDataset):
             shard_filenames = sorted(glob.glob(os.path.join(bin_dir, "*.bin")))
         # train/test split. let's use only shard 0 for test split, rest train
         shard_filenames = shard_filenames[1:] if self.split == "train" else shard_filenames[:1]
-        assert len(shard_filenames)>0, f"No bin files found in {bin_dir}"
+        assert len(shard_filenames) > 0, f"No bin files found in {bin_dir}"
         while True:
             rng.shuffle(shard_filenames)
             for shard in shard_filenames:

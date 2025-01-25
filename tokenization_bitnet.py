@@ -149,8 +149,8 @@ class BitnetTokenizer(PreTrainedTokenizer):
         eos_token="</s>",
         pad_token=None,
         sp_model_kwargs: Optional[Dict[str, Any]] = None,
-        add_bos_token=True,
-        add_eos_token=False,
+        add_bos_token=True,  # Add BOS token by default
+        add_eos_token=False,  # Do not add EOS token by default
         clean_up_tokenization_spaces=False,
         use_default_system_prompt=False,
         spaces_between_special_tokens=False,
@@ -163,16 +163,6 @@ class BitnetTokenizer(PreTrainedTokenizer):
         eos_token = AddedToken(eos_token, normalized=False, special=True) if isinstance(eos_token, str) else eos_token
         unk_token = AddedToken(unk_token, normalized=False, special=True) if isinstance(unk_token, str) else unk_token
         pad_token = AddedToken(pad_token, normalized=False, special=True) if isinstance(pad_token, str) else pad_token
-
-        if legacy is None:
-            logger.warning_once(
-                f"You are using the default legacy behaviour of the {self.__class__}. This is"
-                " expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you."
-                " If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it"
-                " means, and thoroughly read the reason why this was added as explained in"
-                " https://github.com/huggingface/transformers/pull/24565"
-            )
-            legacy = True
 
         self.legacy = legacy
         self.vocab_file = vocab_file
