@@ -48,8 +48,8 @@ from transformers.utils import (
     logging,
     replace_return_docstrings,
 )
-from .configuration_bitnet import BitnetConfig
-from .utils_quant import BitLinear
+from configuration_bitnet import BitnetConfig
+from utils_quant import BitLinear
 
 
 if is_flash_attn_2_available():
